@@ -27,12 +27,34 @@
 
     <hr>
     <h3>Add expense</h3>
-    <form method="post" action="{{ url_for('add_expense', group_id=group.id) }}">
+    <form method="post" action="{{ url_for('add_expense', group_id=group.id) }}" id="add-form">
       <label>Description</label>
-      <input name="description" placeholder="e.g. Pizza">
+      <input id="desc" name="description" placeholder="e.g. Pizza">
       <label>Amount</label>
-      <input name="amount" placeholder="e.g. 23.50" required>
-      <button class="btn" type="submit">Add</button>
+      <input id="amt" name="amount" placeholder="e.g. 23.50" required>
+      <button id="add-btn" class="btn" type="submit" disabled>Add</button>
     </form>
+    <script>
+      (function(){
+        const desc = document.getElementById('desc');
+        const amt = document.getElementById('amt');
+        const btn = document.getElementById('add-btn');
+        function validAmount(v){
+          if(!v) return false;
+          return !Number.isNaN(Number(v));
+        }
+        function update(){
+          const hasDesc = desc && desc.value.trim().length>0;
+          const hasAmt = amt && validAmount(amt.value.trim());
+          const ok = hasDesc && hasAmt;
+          btn.disabled = !ok;
+          btn.classList.toggle('btn-active', ok);
+        }
+        if(desc) desc.addEventListener('input', update);
+        if(amt) amt.addEventListener('input', update);
+        window.addEventListener('DOMContentLoaded', update);
+        update();
+      })();
+    </script>
   </div>
 {% endblock %}

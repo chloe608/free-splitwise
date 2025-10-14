@@ -5,16 +5,16 @@
       <div class="card">
         <h2>Welcome, {{ user.first_name or user.username }}</h2>
         <p>Create or join a group to start tracking expenses.</p>
-        <form method="post" action="{{ url_for('create_group') }}">
+        <form method="post" action="{{ url_for('create_group') }}" id="create-form">
           <label>New group name</label>
-          <input name="group_name" placeholder="e.g. Dinner with friends">
-          <button class="btn" type="submit">Create Group</button>
+          <input id="group-name" name="group_name" placeholder="e.g. Dinner with friends">
+          <button id="create-btn" class="btn" type="submit" disabled>Create Group</button>
         </form>
         <hr>
-        <form method="post" action="{{ url_for('join_group') }}">
+        <form method="post" action="{{ url_for('join_group') }}" id="join-form">
           <label>Join with code</label>
-          <input name="group_code" placeholder="GROUPCODE" required>
-          <button class="btn" type="submit">Join Group</button>
+          <input id="group-code" name="group_code" placeholder="GROUPCODE" required>
+          <button id="join-btn" class="btn" type="submit" disabled>Join Group</button>
         </form>
       </div>
     </div>
@@ -33,4 +33,23 @@
       </div>
     </div>
   </div>
+  <script>
+    (function(){
+      function watchText(inputId, btnId){
+        const input = document.getElementById(inputId);
+        const btn = document.getElementById(btnId);
+        if(!input || !btn) return;
+        function update(){
+          const has = input.value && input.value.trim().length>0;
+          btn.disabled = !has;
+          btn.classList.toggle('btn-active', has);
+        }
+        input.addEventListener('input', update);
+        window.addEventListener('DOMContentLoaded', update);
+        update();
+      }
+      watchText('group-name','create-btn');
+      watchText('group-code','join-btn');
+    })();
+  </script>
 {% endblock %}
