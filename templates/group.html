@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card">
+    <div class="group-header">
+      <h2>{{ group.name }}</h2>
+      <div class="code">Code: <strong>{{ group.code }}</strong></div>
+    </div>
+    <hr>
+    <h3>Expenses</h3>
+    {% if expenses %}
+      <table class="expenses">
+        <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>By</th></tr></thead>
+        <tbody>
+          {% for e in expenses %}
+            <tr>
+              <td>{{ e.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+              <td>{{ e.description }}</td>
+              <td>${{ '%.2f'|format(e.amount) }}</td>
+              <td>{{ user_map.get(e.created_by) if user_map else (e.created_by) }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No expenses yet.</p>
+    {% endif %}
+
+    <hr>
+    <h3>Add expense</h3>
+    <form method="post" action="{{ url_for('add_expense', group_id=group.id) }}">
+      <label>Description</label>
+      <input name="description" placeholder="e.g. Pizza">
+      <label>Amount</label>
+      <input name="amount" placeholder="e.g. 23.50" required>
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </div>
+{% endblock %}

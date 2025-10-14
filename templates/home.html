@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="row">
+    <div class="col">
+      <div class="card">
+        <h2>Welcome, {{ user.first_name or user.username }}</h2>
+        <p>Create or join a group to start tracking expenses.</p>
+        <form method="post" action="{{ url_for('create_group') }}">
+          <label>New group name</label>
+          <input name="group_name" placeholder="e.g. Dinner with friends">
+          <button class="btn" type="submit">Create Group</button>
+        </form>
+        <hr>
+        <form method="post" action="{{ url_for('join_group') }}">
+          <label>Join with code</label>
+          <input name="group_code" placeholder="GROUPCODE" required>
+          <button class="btn" type="submit">Join Group</button>
+        </form>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <h3>Your groups</h3>
+        {% if groups %}
+          <ul class="groups">
+            {% for g in groups %}
+              <li><a href="{{ url_for('group_view', group_id=g.id) }}">{{ g.name }}</a> <small>({{ g.code }})</small></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p>No groups yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

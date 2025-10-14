@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="card center">
+    <h1>Welcome</h1>
+    <p>Create a username to get started. No password required.</p>
+    <form method="post">
+      <label>Username</label>
+      <input name="username" placeholder="e.g. alice.smith" required>
+      <label>First name (optional)</label>
+      <input name="first_name" value="{{ suggested_first }}">
+      <label>Last name (optional)</label>
+      <input name="last_name" value="{{ suggested_last }}">
+      <div class="actions">
+        <button type="submit" class="btn">Continue</button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
