@@ -146,7 +146,7 @@
         const calcBtn = document.getElementById('calc-btn');
         const finalSummary = document.getElementById('final-summary');
         const settlementDiv = document.getElementById('settlement-summary');
-        const settlements = {{ settlements|tojson }};
+        var settlements = {{ settlements|tojson|safe }};
         const userMap = {{ member_map|tojson }};
         calcBtn.addEventListener('click', ()=>{
           if(finalSummary.style.display === 'none' || !finalSummary.style.display) {
