@@ -29,4 +29,11 @@ input{width:100%;padding:10px;border-radius:8px;border:1px solid #e6efec;margin-
 .expenses{width:100%;border-collapse:collapse;margin-top:8px}
 .expenses th,.expenses td{padding:8px 6px;text-align:left;border-bottom:1px solid #f4f8f6}
 
+.group-balance{padding:12px 0}
+.balance.positive{color:#2b7a58;background:#e9f7f1;padding:8px;border-radius:8px}
+.balance.negative{color:#9a3b2e;background:#fff4f2;padding:8px;border-radius:8px}
+.member-list{display:flex;flex-direction:column;gap:6px}
+.member-item{display:flex;align-items:center;gap:8px}
+.custom-row{display:flex;align-items:center;gap:8px;margin-top:6px}
+
 @media(max-width:800px){.row{flex-direction:column}}

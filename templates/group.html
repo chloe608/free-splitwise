@@ -5,6 +5,83 @@
       <h2>{{ group.name }}</h2>
       <div class="code">Code: <strong>{{ group.code }}</strong></div>
     </div>
+    <div class="group-balance">
+      {% if current_net >= 0 %}
+        <div class="balance positive">You are owed <strong>${{ '%.2f'|format(current_net) }}</strong></div>
+      {% else %}
+        <div class="balance negative">You owe <strong>${{ '%.2f'|format(current_net * -1) }}</strong></div>
+      {% endif %}
+    </div>
+
+    <hr>
+    <div id="final-summary" style="display:none; flex-direction:column; gap:16px; margin-bottom:12px">
+      <h3>Summary</h3>
+      <div style="display:flex; gap:32px; flex-wrap:wrap;">
+        <div>
+          <strong>Total Paid</strong>
+          <table class="summary-table">
+            <thead><tr><th>Member</th><th>Paid</th></tr></thead>
+            <tbody>
+              {% for m in members %}
+                <tr><td>{{ m.username }}</td><td>${{ '%.2f'|format(total_paid[m.id]) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <strong>Total Owed</strong>
+          <table class="summary-table">
+            <thead><tr><th>Member</th><th>Owes</th></tr></thead>
+            <tbody>
+              {% for m in members %}
+                <tr><td>{{ m.username }}</td><td>${{ '%.2f'|format(total_owed[m.id]) }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <strong>Net Balance</strong>
+          <table class="summary-table">
+            <thead><tr><th>Member</th><th>Net</th></tr></thead>
+            <tbody>
+              {% for m in members %}
+                <tr><td>{{ m.username }}</td>
+                  <td>{% set net = net_balances[m.id] %}
+                    {% if net > 0 %}<span style="color:#2b7a58">+${{ '%.2f'|format(net) }}</span>{% elif net < 0 %}<span style="color:#b03d34">-${{ '%.2f'|format(-net) }}</span>{% else %}$0.00{% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div style="display:flex; gap:32px; flex-wrap:wrap;">
+        <div>
+          <strong>Receivers (owed money)</strong>
+          <ul>
+            {% for uid, net in receivers.items() %}
+              <li>{{ member_map[uid] }}: <span style="color:#2b7a58">+${{ '%.2f'|format(net) }}</span></li>
+            {% else %}
+              <li>None</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div>
+          <strong>Givers (owe money)</strong>
+          <ul>
+            {% for uid, net in givers.items() %}
+              <li>{{ member_map[uid] }}: <span style="color:#b03d34">-${{ '%.2f'|format(-net) }}</span></li>
+            {% else %}
+              <li>None</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div>
+        <strong>Settlement Transactions</strong>
+        <div id="settlement-summary" style="flex-direction:column;gap:6px;margin-left:8px"></div>
+      </div>
+    </div>
     <hr>
     <h3>Expenses</h3>
     {% if expenses %}
@@ -32,28 +109,156 @@
       <input id="desc" name="description" placeholder="e.g. Pizza">
       <label>Amount</label>
       <input id="amt" name="amount" placeholder="e.g. 23.50" required>
+
+      <label>Split</label>
+      <select id="split-mode" name="split_mode">
+        <option value="all">Split evenly among all members</option>
+        <option value="selected_even">Split evenly among selected members</option>
+        <option value="selected_custom">Custom amounts per selected member</option>
+      </select>
+
+      <div id="member-list" class="member-list" style="display:none;margin-top:8px;">
+        <div>Select members to include:</div>
+        {% for m in members %}
+          <label class="member-item"><input type="checkbox" name="members" value="{{ m.id }}"> {{ m.username }}</label>
+        {% endfor %}
+      </div>
+
+      <div id="custom-amounts" style="display:none;margin-top:8px;">
+        <div>Enter amounts for selected members:</div>
+        {% for m in members %}
+          <div class="custom-row" data-uid="{{ m.id }}" style="display:none;">
+            <label>{{ m.username }}</label>
+            <input name="amount_{{ m.id }}" placeholder="0.00">
+          </div>
+        {% endfor %}
+      </div>
+
       <button id="add-btn" class="btn" type="submit" disabled>Add</button>
     </form>
+
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <button id="calc-btn" class="btn" type="button">Calculate final split</button>
+    </div>
+
+    <script>
+      (function(){
+        const calcBtn = document.getElementById('calc-btn');
+        const finalSummary = document.getElementById('final-summary');
+        const settlementDiv = document.getElementById('settlement-summary');
+        const settlements = {{ settlements|tojson }};
+        const userMap = {{ member_map|tojson }};
+        calcBtn.addEventListener('click', ()=>{
+          if(finalSummary.style.display === 'none' || !finalSummary.style.display) {
+            // Render settlements
+            settlementDiv.innerHTML = '';
+            if(!settlements || settlements.length===0){
+              settlementDiv.innerHTML = '<div>No settlements needed — all balanced.</div>';
+            } else {
+              settlements.forEach(s=>{
+                const div = document.createElement('div');
+                const from = userMap[s.from] || s.from;
+                const to = userMap[s.to] || s.to;
+                const amt = s.amount.toFixed(2);
+                div.innerHTML = `<span style=\"color:#9a3b2e\">${from}</span> pays <span style=\"color:#2b7a58\">${to}</span> <strong>$${amt}</strong>`;
+                settlementDiv.appendChild(div);
+              });
+            }
+            finalSummary.style.display = 'flex';
+            calcBtn.textContent = 'Hide final split';
+          } else {
+            finalSummary.style.display = 'none';
+            calcBtn.textContent = 'Calculate final split';
+          }
+        });
+      })();
+    </script>
+
     <script>
       (function(){
         const desc = document.getElementById('desc');
         const amt = document.getElementById('amt');
         const btn = document.getElementById('add-btn');
+        const split = document.getElementById('split-mode');
+        const memberList = document.getElementById('member-list');
+        const custom = document.getElementById('custom-amounts');
+        const customHint = document.createElement('div');
+        customHint.style.marginTop = '8px';
+        customHint.style.color = '#b03d34';
+        custom.appendChild(customHint);
+
         function validAmount(v){
           if(!v) return false;
-          return !Number.isNaN(Number(v));
+          return !Number.isNaN(Number(v)) && Number(v) >= 0;
         }
-        function update(){
+
+        function toggleMemberUI(){
+          if(split.value === 'all'){
+            memberList.style.display = 'none';
+            custom.style.display = 'none';
+          } else if(split.value === 'selected_even'){
+            memberList.style.display = 'block';
+            custom.style.display = 'none';
+          } else {
+            memberList.style.display = 'block';
+            custom.style.display = 'block';
+          }
+          updateBtn();
+        }
+
+        function updateCustomRows(){
+          const checks = Array.from(document.querySelectorAll('#member-list input[type=checkbox]'));
+          checks.forEach(ch=>{
+            const uid = ch.value;
+            const row = document.querySelector('.custom-row[data-uid="'+uid+'"]');
+            if(row) row.style.display = ch.checked ? 'flex' : 'none';
+          });
+        }
+
+        function customSumMatches(total){
+          const checked = Array.from(document.querySelectorAll('#member-list input[type=checkbox]')).filter(ch=>ch.checked);
+          let sum = 0;
+          for(const ch of checked){
+            const uid = ch.value;
+            const el = document.querySelector('.custom-row[data-uid="'+uid+'"] input');
+            if(!el) return false;
+            const v = el.value.trim();
+            if(!validAmount(v)) return false;
+            sum += Number(v);
+          }
+          // allow small rounding diff
+          return Math.abs(sum - total) < 0.01;
+        }
+
+        function updateBtn(){
           const hasDesc = desc && desc.value.trim().length>0;
           const hasAmt = amt && validAmount(amt.value.trim());
-          const ok = hasDesc && hasAmt;
+          let ok = hasDesc && hasAmt;
+          if(split.value === 'selected_even' || split.value === 'selected_custom'){
+            const anyChecked = Array.from(document.querySelectorAll('#member-list input[type=checkbox]')).some(ch=>ch.checked);
+            ok = ok && anyChecked;
+            if(split.value === 'selected_custom'){
+              const total = Number(amt.value.trim());
+              const matches = customSumMatches(total);
+              if(!matches){
+                customHint.textContent = `Custom amounts must sum to $${total.toFixed(2)}`;
+              } else {
+                customHint.textContent = '';
+              }
+              ok = ok && matches;
+            }
+          }
           btn.disabled = !ok;
           btn.classList.toggle('btn-active', ok);
         }
-        if(desc) desc.addEventListener('input', update);
-        if(amt) amt.addEventListener('input', update);
-        window.addEventListener('DOMContentLoaded', update);
-        update();
+
+        // hooks
+        if(split) split.addEventListener('change', ()=>{toggleMemberUI(); updateCustomRows();});
+        document.querySelectorAll('#member-list input[type=checkbox]').forEach(el=>el.addEventListener('change', ()=>{updateCustomRows(); updateBtn();}));
+        document.querySelectorAll('#custom-amounts input').forEach(el=>el.addEventListener('input', updateBtn));
+        if(desc) desc.addEventListener('input', updateBtn);
+        if(amt) amt.addEventListener('input', updateBtn);
+        window.addEventListener('DOMContentLoaded', ()=>{toggleMemberUI(); updateCustomRows(); updateBtn();});
       })();
     </script>
   </div>
